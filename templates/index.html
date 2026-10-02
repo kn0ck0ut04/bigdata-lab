@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f5f2">
+    <title>DataLab — анализ данных</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body data-max-upload-mb="{{ max_upload_mb }}">
+    <header class="topbar">
+      <a class="brand" href="/">DataLab</a>
+    </header>
+
+    <main class="page-shell">
+      <section class="intro" aria-labelledby="page-title">
+        <h1 id="page-title">Анализ данных</h1>
+      </section>
+
+      <section class="upload-section" aria-labelledby="upload-title">
+        <div class="section-heading">
+          <h2 id="upload-title">Загрузка данных</h2>
+        </div>
+
+        <div class="ingest-grid">
+          <form id="upload-form" class="upload-form" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+            <label class="drop-area" id="drop-area" for="dataset-file">
+              <span class="drop-title">Выберите файл или перетащите его сюда</span>
+              <span class="drop-help" id="file-caption"></span>
+              <input id="dataset-file" name="file" type="file" accept=".csv,.parquet,text/csv,application/vnd.apache.parquet" required aria-describedby="file-caption">
+            </label>
+            <button class="button button-primary" type="submit">Загрузить и изучить</button>
+          </form>
+
+          <div class="sample-box">
+            <p class="sample-description">Для быстрого просмотра — пример на 20 000 строк.</p>
+            <form id="sample-form" action="{{ url_for('load_sample') }}" method="post">
+              <button class="button button-secondary" type="submit">Загрузить пример</button>
+            </form>
+          </div>
+        </div>
+
+        <p class="activity-status" id="activity-status" role="status" aria-live="polite"></p>
+        {% if error %}<p class="activity-status error-message" role="alert">{{ error }}</p>{% endif %}
+        {% if state.dataset %}
+          <noscript><p class="fallback-note">Загружен набор «{{ state.dataset.filename }}»: {{ state.dataset.rows }} строк. Для таблицы и графиков включите JavaScript.</p></noscript>
+        {% endif %}
+      </section>
+
+      <section class="results" id="results" aria-labelledby="dataset-name" hidden>
+        <div class="dataset-heading">
+          <div>
+            <h2 id="dataset-name">Данные загружены</h2>
+            <p class="dataset-meta" id="dataset-meta"></p>
+          </div>
+        </div>
+
+        <div class="metrics" aria-label="Сводка данных">
+          <article class="metric"><span>Строки</span><strong id="metric-rows">—</strong></article>
+          <article class="metric"><span>Столбцы</span><strong id="metric-columns">—</strong></article>
+          <article class="metric"><span>Размер файла</span><strong id="metric-size">—</strong></article>
+          <article class="metric"><span>Пропуски</span><strong id="metric-missing">—</strong></article>
+        </div>
+
+        <div class="work-grid">
+          <section class="panel data-panel" aria-labelledby="preview-title">
+            <div class="panel-heading">
+              <h3 id="preview-title">Фрагмент данных</h3>
+              <span class="panel-side-note" id="sample-size"></span>
+            </div>
+            <div class="table-scroll" tabindex="0" aria-label="Предпросмотр строк набора данных">
+              <table class="data-table">
+                <thead id="preview-head"></thead>
+                <tbody id="preview-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel model-panel" aria-labelledby="model-title">
+            <div class="panel-heading">
+              <h3 id="model-title">Обучение модели</h3>
+            </div>
+            <p class="model-description">Выберите столбец, который нужно предсказать.</p>
+            <form id="train-form" action="{{ url_for('train') }}" method="post">
+              <label for="target-select">Целевой столбец</label>
+              <select id="target-select" name="target" required></select>
+              <p class="field-help">Тип задачи определяется автоматически.</p>
+              <button class="button button-primary train-button" type="submit">Обучить модель</button>
+            </form>
+            <p class="training-status" id="training-status" role="status" aria-live="polite"></p>
+            <div class="model-result" id="model-result" hidden>
+              <p class="result-task" id="result-task"></p>
+              <div class="model-metrics" id="model-metrics"></div>
+              <figure class="importance-figure">
+                <figcaption>Вклад признаков</figcaption>
+                <ol class="importance-list" id="importance-list"></ol>
+              </figure>
+            </div>
+          </section>
+        </div>
+
+        <div class="charts-grid">
+          <figure class="panel chart-panel" id="distribution-panel">
+            <figcaption class="chart-heading">
+              <strong id="distribution-title">Распределение</strong>
+            </figcaption>
+            <p class="chart-caption" id="distribution-caption">Значения показаны по диапазонам.</p>
+            <ol class="bar-chart" id="distribution-chart" aria-label="Распределение значений"></ol>
+          </figure>
+          <figure class="panel chart-panel" id="category-panel">
+            <figcaption class="chart-heading">
+              <strong id="category-title">Частые значения</strong>
+            </figcaption>
+            <p class="chart-caption" id="category-caption">Частота значений по выборке.</p>
+            <ol class="bar-chart compact-chart" id="category-chart" aria-label="Частота категорий"></ol>
+          </figure>
+        </div>
+        <p class="method-note" id="method-note">Статистика рассчитана по всему файлу; модель и графики используют выборку до 20 000 строк.</p>
+      </section>
+    </main>
+
+    <script id="bootstrap-data" type="application/json">{{ state|tojson }}</script>
+  </body>
+</html>
